@@ -8723,5 +8723,10 @@
         <item quantity="other">You haven’t completed a backup for %1$d days. Create a backup now.</item>
     </plurals>
 
+    <string name="third_party_actions_title">Quick actions</string>
+    <string name="third_party_actions_swiggy">Order food on Swiggy</string>
+    <string name="third_party_actions_zomato">Order food on Zomato</string>
+    <string name="third_party_actions_uber">Book a cab on Uber</string>
+
     <!-- EOF -->
 </resources>
