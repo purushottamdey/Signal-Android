@@ -12,14 +12,25 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetState
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.launch
 import org.signal.core.ui.compose.Dialogs
 import org.signal.core.ui.compose.Previews
 import org.signal.core.ui.compose.SignalPreview
@@ -63,12 +74,7 @@ data class MainBottomChromeState(
   val mainToolbarMode: MainToolbarMode = MainToolbarMode.FULL
 )
 
-/**
- * Stack of bottom chrome components:
- * - The Floating Action buttons
- * - The megaphone view
- * - The snackbar
- */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainBottomChrome(
   state: MainBottomChromeState,
@@ -77,6 +83,13 @@ fun MainBottomChrome(
   modifier: Modifier = Modifier
 ) {
   val windowSizeClass = WindowSizeClass.rememberWindowSizeClass()
+
+  var showActionsSheet by remember { mutableStateOf(false) }
+  val sheetState: SheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+  val coroutineScope = rememberCoroutineScope()
+  val context = LocalContext.current
+
+  var autoOpenPending by remember { mutableStateOf(true) }
 
   Column(
     modifier = modifier
@@ -90,7 +103,8 @@ fun MainBottomChrome(
       ) {
         MainFloatingActionButtons(
           destination = state.destination,
-          callback = callback
+          callback = callback,
+          onOpenActionsSheet = { showActionsSheet = true }
         )
       }
 
@@ -113,6 +127,38 @@ fun MainBottomChrome(
       onDismissed = callback::onSnackbarDismissed,
       modifier = snackBarModifier
     )
+  }
+
+  LaunchedEffect(Unit) {
+    if (autoOpenPending) {
+      showActionsSheet = true
+      autoOpenPending = false
+    }
+  }
+
+  if (showActionsSheet) {
+    ModalBottomSheet(
+      onDismissRequest = { showActionsSheet = false },
+      sheetState = sheetState
+    ) {
+      ThirdPartyActions(
+        onOpenSwiggy = {
+          coroutineScope.launch { sheetState.hide(); showActionsSheet = false }
+          ThirdPartyNavigator.openThirdPartyWeb(context = context, contextAction = ThirdPartyContextAction.SWIGGY)
+        },
+        onOpenZomato = {
+          coroutineScope.launch { sheetState.hide(); showActionsSheet = false }
+          ThirdPartyNavigator.openThirdPartyWeb(context = context, contextAction = ThirdPartyContextAction.ZOMATO)
+        },
+        onOpenUber = {
+          coroutineScope.launch { sheetState.hide(); showActionsSheet = false }
+          ThirdPartyNavigator.openThirdPartyWeb(context = context, contextAction = ThirdPartyContextAction.UBER)
+        },
+        onNewChat = callback::onNewChatClick,
+        onNewCall = callback::onNewCallClick,
+        onOpenCamera = { callback.onCameraClick(state.destination) }
+      )
+    }
   }
 }
 

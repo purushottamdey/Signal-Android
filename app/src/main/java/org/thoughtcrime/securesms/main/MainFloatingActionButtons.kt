@@ -63,7 +63,8 @@ fun MainFloatingActionButtons(
   destination: MainNavigationListLocation,
   callback: MainFloatingActionButtonsCallback,
   modifier: Modifier = Modifier,
-  navigation: Navigation = Navigation.rememberNavigation()
+  navigation: Navigation = Navigation.rememberNavigation(),
+  onOpenActionsSheet: (() -> Unit)? = null
 ) {
   val boxHeightDp = (ACTION_BUTTON_SIZE * 2 + ACTION_BUTTON_SPACING)
   val boxHeightPx = with(LocalDensity.current) {
@@ -104,7 +105,8 @@ fun MainFloatingActionButtons(
         onNewChatClick = callback::onNewChatClick,
         onCameraClick = callback::onCameraClick,
         onNewCallClick = callback::onNewCallClick,
-        elevation = shadowElevation
+        elevation = shadowElevation,
+        onOpenActionsSheet = onOpenActionsSheet
       )
     }
   }
@@ -166,15 +168,20 @@ private fun PrimaryActionButton(
   elevation: Dp,
   onNewChatClick: () -> Unit = {},
   onCameraClick: (MainNavigationListLocation) -> Unit = {},
-  onNewCallClick: () -> Unit = {}
+  onNewCallClick: () -> Unit = {},
+  onOpenActionsSheet: (() -> Unit)? = null
 ) {
-  val onClick = remember(destination) {
-    when (destination) {
-      MainNavigationListLocation.ARCHIVE -> error("Not supported")
-      MainNavigationListLocation.CHATS -> onNewChatClick
-      MainNavigationListLocation.CALLS -> onNewCallClick
-      MainNavigationListLocation.STORIES -> {
-        { onCameraClick(destination) }
+  val onClick = remember(destination, onOpenActionsSheet) {
+    if (onOpenActionsSheet != null) {
+      onOpenActionsSheet
+    } else {
+      when (destination) {
+        MainNavigationListLocation.ARCHIVE -> error("Not supported")
+        MainNavigationListLocation.CHATS -> onNewChatClick
+        MainNavigationListLocation.CALLS -> onNewCallClick
+        MainNavigationListLocation.STORIES -> {
+          { onCameraClick(destination) }
+        }
       }
     }
   }
